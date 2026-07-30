@@ -6,6 +6,7 @@ from collector import BatteryCollector
 from keyword_filter import KeywordFilter
 from article_extractor import ArticleExtractor
 from report_generator import ReportGenerator
+from deduplicator import ArticleDeduplicator
 
 
 
@@ -40,7 +41,7 @@ st.write(
     - Sodium-ion Battery
 
     Current stage:
-    Collection → Filtering → Content Extraction → PDF Report
+    Collection → Deduplication → Filtering → Content Extraction → PDF Report
     """
 )
 
@@ -74,6 +75,24 @@ if st.button(
 
         st.success(
             f"Collected articles: {len(articles)}"
+        )
+
+
+
+        # -------------------------
+        # 1.5 Deduplicate Articles
+        # -------------------------
+
+        deduplicator = ArticleDeduplicator()
+
+
+        articles = deduplicator.remove_duplicates(
+            articles
+        )
+
+
+        st.info(
+            f"After duplicate removal: {len(articles)}"
         )
 
 
@@ -237,6 +256,7 @@ if "articles" in st.session_state:
                 "content",
                 ""
             )
+
 
 
             if content:
