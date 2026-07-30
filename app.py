@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 from collector import BatteryCollector
 from keyword_filter import KeywordFilter
@@ -28,8 +29,8 @@ st.write(
     - LMR
     - Sodium-ion battery
 
-    AI is used to support information gathering,
-    not replace technical judgment.
+    Purpose:
+    Information discovery and research support.
     """
 )
 
@@ -41,36 +42,34 @@ if st.button(
 
 
     with st.spinner(
-        "Collecting battery technology news..."
+        "Collecting battery technology information..."
     ):
 
 
-        # 1. Collect
+        # Collect
 
         collector = BatteryCollector(
             "keywords.yaml"
         )
-
 
         articles = collector.collect_articles()
 
 
 
         st.success(
-            f"Collected {len(articles)} articles"
+            f"Collected articles: {len(articles)}"
         )
 
 
 
-        # 2. Filter
+        # Filter
 
-        filter_agent = KeywordFilter(
+        keyword_filter = KeywordFilter(
             "keywords.yaml"
         )
 
-
         filtered_articles = (
-            filter_agent.filter_articles(
+            keyword_filter.filter_articles(
                 articles
             )
         )
@@ -78,65 +77,12 @@ if st.button(
 
 
         st.info(
-            f"Relevant technology articles: {len(filtered_articles)}"
+            f"Technology-related articles: {len(filtered_articles)}"
         )
 
 
 
-        # 3. Display
-
-
-        st.subheader(
-            "Technology Watch Results"
-        )
-
-
-        for article in filtered_articles:
-
-
-            with st.expander(
-                article["title"]
-            ):
-
-
-                st.write(
-                    "Keyword:"
-                )
-
-                st.write(
-                    article.get(
-                        "technology_keywords",
-                        []
-                    )
-                )
-
-
-                st.write(
-                    "Source:"
-                )
-
-                st.write(
-                    article.get(
-                        "source",
-                        ""
-                    )
-                )
-
-
-                st.write(
-                    "Link:"
-                )
-
-                st.write(
-                    article.get(
-                        "link",
-                        ""
-                    )
-                )
-
-
-
-        # 4. Generate report
+        # Save report
 
         generator = ReportGenerator(
             "reports"
@@ -148,11 +94,123 @@ if st.button(
         )
 
 
-        st.success(
-            "Weekly report generated!"
+
+        st.session_state[
+            "report_file"
+        ] = report_file
+
+
+
+        st.session_state[
+            "articles"
+        ] = filtered_articles
+
+
+
+# -------------------------
+# Article Viewer
+# -------------------------
+
+if "articles" in st.session_state:
+
+
+    st.subheader(
+        "📚 Technology Watch Results"
+    )
+
+
+    for article in st.session_state["articles"]:
+
+
+        with st.expander(
+            article["title"]
+        ):
+
+
+            st.write(
+                "Technology Keywords:"
+            )
+
+            st.write(
+                article.get(
+                    "technology_keywords",
+                    []
+                )
+            )
+
+
+            st.write(
+                "Source:"
+            )
+
+            st.write(
+                article.get(
+                    "source",
+                    ""
+                )
+            )
+
+
+            st.link_button(
+                "Open Article",
+                article["link"]
+            )
+
+
+
+# -------------------------
+# Report Viewer
+# -------------------------
+
+if "report_file" in st.session_state:
+
+
+    st.divider()
+
+
+    st.subheader(
+        "📄 Weekly Report"
+    )
+
+
+    report_path = st.session_state[
+        "report_file"
+    ]
+
+
+    if os.path.exists(
+        report_path
+    ):
+
+
+        with open(
+            report_path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+
+            report_content = file.read()
+
+
+
+        st.markdown(
+            report_content
         )
 
 
-        st.write(
-            report_file
+
+        st.download_button(
+
+            label=
+            "⬇️ Download Weekly Report",
+
+            data=
+            report_content,
+
+            file_name=
+            "china_battery_weekly_report.md",
+
+            mime=
+            "text/markdown"
+
         )
