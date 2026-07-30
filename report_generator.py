@@ -1,12 +1,26 @@
-import os
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
+
+from reportlab.lib.styles import getSampleStyleSheet
+
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
 from datetime import datetime
+import os
 
 
 
 class ReportGenerator:
 
 
-    def __init__(self, output_folder):
+    def __init__(
+        self,
+        output_folder
+    ):
 
         self.output_folder = output_folder
 
@@ -18,6 +32,15 @@ class ReportGenerator:
             os.makedirs(
                 output_folder
             )
+
+
+        # Korean font support
+
+        pdfmetrics.registerFont(
+            UnicodeCIDFont(
+                "HYSMyeongJo-Medium"
+            )
+        )
 
 
 
@@ -32,117 +55,185 @@ class ReportGenerator:
         )
 
 
-        report = []
+        filename = (
 
+            "China_Battery_Report_"
+            +
+            today
+            +
+            ".pdf"
 
-
-        report.append(
-            "# China Battery Weekly Watch\n"
         )
 
 
-        report.append(
-            f"Generated: {today}\n"
+        filepath = os.path.join(
+            self.output_folder,
+            filename
         )
 
 
 
-        report.append(
-            "---\n"
+        document = SimpleDocTemplate(
+            filepath
         )
 
 
 
-        if len(articles) == 0:
+        styles = getSampleStyleSheet()
 
 
-            report.append(
-                "No relevant articles found.\n"
+        for style in styles.byName.values():
+
+            style.fontName = (
+                "HYSMyeongJo-Medium"
             )
 
 
 
-        else:
+        content = []
 
 
-            for article in articles:
+
+        # Title
+
+        content.append(
+            Paragraph(
+                "China Battery Technology Weekly Report",
+                styles["Title"]
+            )
+        )
 
 
-                report.append(
-                    "## "
-                    +
-                    article["title"]
-                    +
-                    "\n"
+        content.append(
+            Spacer(
+                1,
+                20
+            )
+        )
+
+
+        content.append(
+            Paragraph(
+                f"Generated Date: {today}",
+                styles["Normal"]
+            )
+        )
+
+
+        content.append(
+            Spacer(
+                1,
+                20
+            )
+        )
+
+
+
+        # Articles
+
+        for index, article in enumerate(
+            articles,
+            start=1
+        ):
+
+
+            content.append(
+                Paragraph(
+                    f"{index}. {article.get('title','')}",
+                    styles["Heading2"]
                 )
+            )
 
 
-                report.append(
-                    "Technology keywords:\n"
+            content.append(
+                Spacer(
+                    1,
+                    10
                 )
+            )
 
 
-                for keyword in article.get(
+
+            tech = ", ".join(
+                article.get(
                     "technology_keywords",
                     []
-                ):
-
-                    report.append(
-                        f"- {keyword}\n"
-                    )
-
-
-                report.append(
-                    "\nSource:\n"
                 )
+            )
 
 
-                report.append(
+            content.append(
+                Paragraph(
+                    f"Technology: {tech}",
+                    styles["Normal"]
+                )
+            )
+
+
+
+            content.append(
+                Spacer(
+                    1,
+                    10
+                )
+            )
+
+
+            content.append(
+                Paragraph(
+                    "Summary: Technical summary will be generated.",
+                    styles["Normal"]
+                )
+            )
+
+
+            content.append(
+                Spacer(
+                    1,
+                    10
+                )
+            )
+
+
+
+            content.append(
+                Paragraph(
+                    "Source: "
+                    +
                     article.get(
                         "source",
                         ""
-                    )
-                    +
-                    "\n"
+                    ),
+                    styles["Normal"]
                 )
-
-
-                report.append(
-                    "\nLink:\n"
-                )
-
-
-                report.append(
-                    article.get(
-                        "link",
-                        ""
-                    )
-                    +
-                    "\n"
-                )
-
-
-                report.append(
-                    "\n---\n"
-                )
-
-
-
-        file_path = os.path.join(
-            self.output_folder,
-            "weekly_report.md"
-        )
-
-
-        with open(
-            file_path,
-            "w",
-            encoding="utf-8"
-        ) as file:
-
-            file.write(
-                "\n".join(report)
             )
 
 
-        return file_path
+            content.append(
+                Paragraph(
+                    "Link: "
+                    +
+                    article.get(
+                        "link",
+                        ""
+                    ),
+                    styles["Normal"]
+                )
+            )
+
+
+            content.append(
+                Spacer(
+                    1,
+                    20
+                )
+            )
+
+
+
+        document.build(
+            content
+        )
+
+
+        return filepath
