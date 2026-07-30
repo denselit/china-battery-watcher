@@ -1,16 +1,16 @@
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
-    Spacer
+    Spacer,
+    PageBreak
 )
 
 from reportlab.lib.styles import getSampleStyleSheet
 
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.lib.pagesizes import A4
 
-from datetime import datetime
 import os
+from datetime import datetime
 
 
 
@@ -19,28 +19,20 @@ class ReportGenerator:
 
     def __init__(
         self,
-        output_folder
+        output_dir="reports"
     ):
 
-        self.output_folder = output_folder
+
+        self.output_dir = output_dir
 
 
         if not os.path.exists(
-            output_folder
+            self.output_dir
         ):
 
             os.makedirs(
-                output_folder
+                self.output_dir
             )
-
-
-        # Korean font support
-
-        pdfmetrics.registerFont(
-            UnicodeCIDFont(
-                "HYSMyeongJo-Medium"
-            )
-        )
 
 
 
@@ -50,31 +42,28 @@ class ReportGenerator:
     ):
 
 
-        today = datetime.now().strftime(
-            "%Y-%m-%d"
-        )
-
-
         filename = (
-
-            "China_Battery_Report_"
+            "China_Battery_Intelligence_"
             +
-            today
+            datetime.now().strftime(
+                "%Y%m%d"
+            )
             +
             ".pdf"
-
         )
+
 
 
         filepath = os.path.join(
-            self.output_folder,
+            self.output_dir,
             filename
         )
 
 
 
         document = SimpleDocTemplate(
-            filepath
+            filepath,
+            pagesize=A4
         )
 
 
@@ -82,29 +71,25 @@ class ReportGenerator:
         styles = getSampleStyleSheet()
 
 
-        for style in styles.byName.values():
 
-            style.fontName = (
-                "HYSMyeongJo-Medium"
-            )
+        story = []
 
 
 
-        content = []
-
-
-
+        # --------------------------------
         # Title
+        # --------------------------------
 
-        content.append(
+
+        story.append(
             Paragraph(
-                "China Battery Technology Weekly Report",
+                "🔋 China Battery Technology Intelligence Report",
                 styles["Title"]
             )
         )
 
 
-        content.append(
+        story.append(
             Spacer(
                 1,
                 20
@@ -112,15 +97,21 @@ class ReportGenerator:
         )
 
 
-        content.append(
+
+        story.append(
             Paragraph(
-                f"Generated Date: {today}",
+                "Generated Date: "
+                +
+                datetime.now().strftime(
+                    "%Y-%m-%d"
+                ),
                 styles["Normal"]
             )
         )
 
 
-        content.append(
+
+        story.append(
             Spacer(
                 1,
                 20
@@ -129,23 +120,270 @@ class ReportGenerator:
 
 
 
-        # Articles
+        # --------------------------------
+        # Executive Summary
+        # --------------------------------
+
+
+        story.append(
+            Paragraph(
+                "1. Executive Summary",
+                styles["Heading2"]
+            )
+        )
+
+
+
+        ranked_articles = sorted(
+            articles,
+            key=lambda x:
+            x.get(
+                "investment_score",
+                0
+            ),
+            reverse=True
+        )
+
+
+
+        if ranked_articles:
+
+
+            top_articles = ranked_articles[:5]
+
+
+            for article in top_articles:
+
+
+                title = article.get(
+                    "title",
+                    "No title"
+                )
+
+
+                score = article.get(
+                    "investment_score",
+                    0
+                )
+
+
+                technology = article.get(
+                    "technology_category",
+                    []
+                )
+
+
+
+                summary = (
+
+                    f"<b>{title}</b><br/>"
+                    f"Technology: {technology}<br/>"
+                    f"Investment Score: {score}/100"
+
+                )
+
+
+
+                story.append(
+                    Paragraph(
+                        summary,
+                        styles["Normal"]
+                    )
+                )
+
+
+                story.append(
+                    Spacer(
+                        1,
+                        10
+                    )
+                )
+
+
+
+        else:
+
+            story.append(
+                Paragraph(
+                    "No classified articles available.",
+                    styles["Normal"]
+                )
+            )
+
+
+
+        story.append(
+            PageBreak()
+        )
+
+
+
+        # --------------------------------
+        # Technology Radar
+        # --------------------------------
+
+
+        story.append(
+            Paragraph(
+                "2. Technology Radar",
+                styles["Heading2"]
+            )
+        )
+
+
+
+        technology_map = {}
+
+
+
+        for article in articles:
+
+
+            categories = article.get(
+                "technology_category",
+                []
+            )
+
+
+            for tech in categories:
+
+
+                if tech not in technology_map:
+
+                    technology_map[tech] = []
+
+
+
+                technology_map[tech].append(
+                    article
+                )
+
+
+
+        for tech, items in technology_map.items():
+
+
+            story.append(
+                Paragraph(
+                    tech,
+                    styles["Heading3"]
+                )
+            )
+
+
+            story.append(
+                Paragraph(
+                    f"Related Articles: {len(items)}",
+                    styles["Normal"]
+                )
+            )
+
+
+
+            avg_score = sum(
+
+                item.get(
+                    "investment_score",
+                    0
+                )
+
+                for item in items
+
+            ) / len(items)
+
+
+
+            story.append(
+                Paragraph(
+                    f"Average Investment Score: {avg_score:.1f}/100",
+                    styles["Normal"]
+                )
+            )
+
+
+
+            story.append(
+                Spacer(
+                    1,
+                    15
+                )
+            )
+
+
+
+        story.append(
+            PageBreak()
+        )
+
+
+
+        # --------------------------------
+        # Investment Ranking
+        # --------------------------------
+
+
+        story.append(
+            Paragraph(
+                "3. Investment Priority Ranking",
+                styles["Heading2"]
+            )
+        )
+
+
 
         for index, article in enumerate(
-            articles,
+            ranked_articles,
             start=1
         ):
 
 
-            content.append(
+            title = article.get(
+                "title",
+                ""
+            )
+
+
+            score = article.get(
+                "investment_score",
+                0
+            )
+
+
+            if score >= 40:
+
+                signal = "HIGH PRIORITY"
+
+
+            elif score >= 20:
+
+                signal = "WATCH"
+
+
+            else:
+
+                signal = "MONITOR"
+
+
+
+            text = (
+
+                f"{index}. {title}<br/>"
+                f"Score: {score}/100<br/>"
+                f"Signal: {signal}"
+
+            )
+
+
+
+            story.append(
                 Paragraph(
-                    f"{index}. {article.get('title','')}",
-                    styles["Heading2"]
+                    text,
+                    styles["Normal"]
                 )
             )
 
 
-            content.append(
+            story.append(
                 Spacer(
                     1,
                     10
@@ -154,24 +392,94 @@ class ReportGenerator:
 
 
 
-            tech = ", ".join(
-                article.get(
-                    "technology_keywords",
-                    []
+        story.append(
+            PageBreak()
+        )
+
+
+
+        # --------------------------------
+        # Detailed Articles
+        # --------------------------------
+
+
+        story.append(
+            Paragraph(
+                "4. Detailed Article Analysis",
+                styles["Heading2"]
+            )
+        )
+
+
+
+        for article in articles:
+
+
+            title = article.get(
+                "title",
+                "No title"
+            )
+
+
+            source = article.get(
+                "source",
+                ""
+            )
+
+
+            technology = article.get(
+                "technology_category",
+                []
+            )
+
+
+            score = article.get(
+                "investment_score",
+                0
+            )
+
+
+            content = article.get(
+                "content",
+                "No content"
+            )
+
+
+
+            story.append(
+                Paragraph(
+                    title,
+                    styles["Heading3"]
                 )
             )
 
 
-            content.append(
+
+            story.append(
                 Paragraph(
-                    f"Technology: {tech}",
+                    f"Source: {source}",
                     styles["Normal"]
                 )
             )
 
 
+            story.append(
+                Paragraph(
+                    f"Technology: {technology}",
+                    styles["Normal"]
+                )
+            )
 
-            content.append(
+
+            story.append(
+                Paragraph(
+                    f"Investment Score: {score}/100",
+                    styles["Normal"]
+                )
+            )
+
+
+            story.append(
                 Spacer(
                     1,
                     10
@@ -179,50 +487,16 @@ class ReportGenerator:
             )
 
 
-            content.append(
+
+            story.append(
                 Paragraph(
-                    "Summary: Technical summary will be generated.",
+                    content[:2000],
                     styles["Normal"]
                 )
             )
 
 
-            content.append(
-                Spacer(
-                    1,
-                    10
-                )
-            )
-
-
-
-            content.append(
-                Paragraph(
-                    "Source: "
-                    +
-                    article.get(
-                        "source",
-                        ""
-                    ),
-                    styles["Normal"]
-                )
-            )
-
-
-            content.append(
-                Paragraph(
-                    "Link: "
-                    +
-                    article.get(
-                        "link",
-                        ""
-                    ),
-                    styles["Normal"]
-                )
-            )
-
-
-            content.append(
+            story.append(
                 Spacer(
                     1,
                     20
@@ -232,8 +506,9 @@ class ReportGenerator:
 
 
         document.build(
-            content
+            story
         )
+
 
 
         return filepath
