@@ -7,6 +7,7 @@ from keyword_filter import KeywordFilter
 from article_extractor import ArticleExtractor
 from report_generator import ReportGenerator
 from technology_classifier import TechnologyClassifier
+from deduplicator import ArticleDeduplicator
 
 
 
@@ -41,7 +42,7 @@ st.write(
     - Sodium-ion Battery
 
     Current stage:
-    Collection → Filtering → Extraction → Deduplication → Technology Classification → PDF Report
+    Collection → Deduplication → Filtering → Extraction → Technology Classification → PDF Report
     """
 )
 
@@ -79,7 +80,25 @@ if st.button(
 
 
 
-        # 2. Filter
+        # 2. Deduplicate
+        # (Same article often shows up under multiple keyword searches,
+        # e.g. both a company keyword and a technology keyword. Doing
+        # this before filtering/extraction avoids re-scraping and
+        # re-analyzing the same article multiple times.)
+
+        deduplicator = ArticleDeduplicator()
+
+        deduplicated_articles = deduplicator.remove_duplicates(
+            articles
+        )
+
+        st.info(
+            f"After deduplication: {len(deduplicated_articles)} unique articles"
+        )
+
+
+
+        # 3. Filter
 
         keyword_filter = KeywordFilter(
             "keywords.yaml"
@@ -88,7 +107,7 @@ if st.button(
 
         filtered_articles = (
             keyword_filter.filter_articles(
-                articles
+                deduplicated_articles
             )
         )
 
@@ -100,7 +119,7 @@ if st.button(
 
 
 
-        # 3. Extract Article Content
+        # 4. Extract Article Content
 
         extractor = ArticleExtractor()
 
@@ -134,7 +153,7 @@ if st.button(
 
 
 
-            # 4. Technology Classification
+            # 5. Technology Classification
 
             classification = classifier.classify(
                 result
@@ -174,7 +193,7 @@ if st.button(
 
 
 
-        # 5. Generate PDF
+        # 6. Generate PDF
 
         generator = ReportGenerator(
             "reports"
