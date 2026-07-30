@@ -6,6 +6,9 @@ from keyword_filter import KeywordFilter
 from report_generator import ReportGenerator
 
 
+# -------------------------
+# Page Configuration
+# -------------------------
 
 st.set_page_config(
     page_title="China Battery Watcher",
@@ -13,6 +16,9 @@ st.set_page_config(
 )
 
 
+# -------------------------
+# Title
+# -------------------------
 
 st.title(
     "🔋 China Battery Technology Watcher"
@@ -27,33 +33,37 @@ st.write(
     - BYD
     - LFP
     - LMR
-    - Sodium-ion battery
+    - Sodium-ion Battery
 
     Purpose:
-    Information discovery and research support.
+    Technical information collection and research support.
     """
 )
 
 
+# -------------------------
+# Collect Button
+# -------------------------
 
 if st.button(
     "🔍 Collect Latest Information"
 ):
-
 
     with st.spinner(
         "Collecting battery technology information..."
     ):
 
 
-        # Collect
+        # -------------------------
+        # 1. Collect Articles
+        # -------------------------
 
         collector = BatteryCollector(
             "keywords.yaml"
         )
 
-        articles = collector.collect_articles()
 
+        articles = collector.collect_articles()
 
 
         st.success(
@@ -61,12 +71,14 @@ if st.button(
         )
 
 
-
-        # Filter
+        # -------------------------
+        # 2. Filter Technology Articles
+        # -------------------------
 
         keyword_filter = KeywordFilter(
             "keywords.yaml"
         )
+
 
         filtered_articles = (
             keyword_filter.filter_articles(
@@ -75,14 +87,22 @@ if st.button(
         )
 
 
-
         st.info(
             f"Technology-related articles: {len(filtered_articles)}"
         )
 
 
+        # Save to Session
 
-        # Save report
+        st.session_state[
+            "articles"
+        ] = filtered_articles
+
+
+
+        # -------------------------
+        # 3. Generate PDF Report
+        # -------------------------
 
         generator = ReportGenerator(
             "reports"
@@ -94,16 +114,9 @@ if st.button(
         )
 
 
-
         st.session_state[
             "report_file"
         ] = report_file
-
-
-
-        st.session_state[
-            "articles"
-        ] = filtered_articles
 
 
 
@@ -112,6 +125,9 @@ if st.button(
 # -------------------------
 
 if "articles" in st.session_state:
+
+
+    st.divider()
 
 
     st.subheader(
@@ -123,13 +139,17 @@ if "articles" in st.session_state:
 
 
         with st.expander(
-            article["title"]
+            article.get(
+                "title",
+                "No title"
+            )
         ):
 
 
             st.write(
                 "Technology Keywords:"
             )
+
 
             st.write(
                 article.get(
@@ -143,6 +163,7 @@ if "articles" in st.session_state:
                 "Source:"
             )
 
+
             st.write(
                 article.get(
                     "source",
@@ -151,15 +172,21 @@ if "articles" in st.session_state:
             )
 
 
-            st.link_button(
-                "Open Article",
-                article["link"]
-            )
+            if article.get(
+                "link",
+                ""
+            ):
+
+
+                st.link_button(
+                    "Open Original Article",
+                    article["link"]
+                )
 
 
 
 # -------------------------
-# Report Viewer
+# PDF Report Viewer
 # -------------------------
 
 if "report_file" in st.session_state:
@@ -169,7 +196,7 @@ if "report_file" in st.session_state:
 
 
     st.subheader(
-        "📄 Weekly Report"
+        "📄 Weekly PDF Report"
     )
 
 
@@ -183,34 +210,36 @@ if "report_file" in st.session_state:
     ):
 
 
+        st.success(
+            "PDF Report generated successfully!"
+        )
+
+
+        st.write(
+            f"File location: {report_path}"
+        )
+
+
         with open(
             report_path,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            report_content = file.read()
+            "rb"
+        ) as pdf_file:
 
 
+            st.download_button(
 
-        st.markdown(
-            report_content
-        )
+                label=
+                "⬇️ Download PDF Report",
 
+                data=
+                pdf_file,
 
+                file_name=
+                os.path.basename(
+                    report_path
+                ),
 
-        st.download_button(
+                mime=
+                "application/pdf"
 
-            label=
-            "⬇️ Download Weekly Report",
-
-            data=
-            report_content,
-
-            file_name=
-            "china_battery_weekly_report.md",
-
-            mime=
-            "text/markdown"
-
-        )
+            )
