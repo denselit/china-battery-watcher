@@ -1,0 +1,35 @@
+companies:
+
+  CATL:
+    - 宁德时代
+    - CATL
+    - Contemporary Amperex Technology
+
+
+  BYD:
+    - 比亚迪
+    - BYD
+    - Blade Battery
+
+
+technologies:
+
+  LFP:
+    - 磷酸铁锂
+    - lithium iron phosphate
+    - LFP
+    - phosphate battery
+
+
+  LMR:
+    - 富锂锰基
+    - lithium rich manganese
+    - lithium-rich manganese
+    - LMR
+
+
+  Sodium-ion:
+    - 钠离子电池
+    - sodium ion battery
+    - sodium-ion
+    - Na-ion
