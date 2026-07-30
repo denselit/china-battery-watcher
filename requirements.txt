@@ -5,3 +5,4 @@ openai
 feedparser
 streamlit
 reportlab
+beautifulsoup4
