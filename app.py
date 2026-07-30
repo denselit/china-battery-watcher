@@ -1,9 +1,12 @@
 import streamlit as st
 import os
 
+
 from collector import BatteryCollector
 from keyword_filter import KeywordFilter
+from article_extractor import ArticleExtractor
 from report_generator import ReportGenerator
+
 
 
 # -------------------------
@@ -14,6 +17,7 @@ st.set_page_config(
     page_title="China Battery Watcher",
     layout="wide"
 )
+
 
 
 # -------------------------
@@ -35,28 +39,29 @@ st.write(
     - LMR
     - Sodium-ion Battery
 
-    Purpose:
-    Technical information collection and research support.
+    Current stage:
+    Collection → Filtering → Content Extraction → PDF Report
     """
 )
 
 
+
 # -------------------------
-# Collect Button
+# Main Process
 # -------------------------
 
 if st.button(
     "🔍 Collect Latest Information"
 ):
 
+
     with st.spinner(
-        "Collecting battery technology information..."
+        "Collecting and analyzing articles..."
     ):
 
 
-        # -------------------------
-        # 1. Collect Articles
-        # -------------------------
+
+        # 1. Collect
 
         collector = BatteryCollector(
             "keywords.yaml"
@@ -66,14 +71,14 @@ if st.button(
         articles = collector.collect_articles()
 
 
+
         st.success(
             f"Collected articles: {len(articles)}"
         )
 
 
-        # -------------------------
-        # 2. Filter Technology Articles
-        # -------------------------
+
+        # 2. Filter
 
         keyword_filter = KeywordFilter(
             "keywords.yaml"
@@ -87,22 +92,69 @@ if st.button(
         )
 
 
+
         st.info(
-            f"Technology-related articles: {len(filtered_articles)}"
+            f"Technology articles: {len(filtered_articles)}"
         )
 
 
-        # Save to Session
+
+        # 3. Extract Article Content
+
+        extractor = ArticleExtractor()
+
+
+
+        extracted_articles = []
+
+
+
+        progress = st.progress(0)
+
+
+
+        total = len(
+            filtered_articles
+        )
+
+
+
+        for index, article in enumerate(
+            filtered_articles
+        ):
+
+
+            result = extractor.extract(
+                article
+            )
+
+
+            extracted_articles.append(
+                result
+            )
+
+
+            progress.progress(
+                (index + 1) / total
+            )
+
+
+
+        st.success(
+            "Article content extraction completed."
+        )
+
+
+
+        # Save
 
         st.session_state[
             "articles"
-        ] = filtered_articles
+        ] = extracted_articles
 
 
 
-        # -------------------------
-        # 3. Generate PDF Report
-        # -------------------------
+        # 4. Generate PDF
 
         generator = ReportGenerator(
             "reports"
@@ -110,8 +162,9 @@ if st.button(
 
 
         report_file = generator.generate(
-            filtered_articles
+            extracted_articles
         )
+
 
 
         st.session_state[
@@ -135,6 +188,7 @@ if "articles" in st.session_state:
     )
 
 
+
     for article in st.session_state["articles"]:
 
 
@@ -144,6 +198,20 @@ if "articles" in st.session_state:
                 "No title"
             )
         ):
+
+
+            st.write(
+                "Source:"
+            )
+
+
+            st.write(
+                article.get(
+                    "source",
+                    ""
+                )
+            )
+
 
 
             st.write(
@@ -159,17 +227,32 @@ if "articles" in st.session_state:
             )
 
 
+
             st.write(
-                "Source:"
+                "Extracted Content Preview:"
             )
 
 
-            st.write(
-                article.get(
-                    "source",
-                    ""
+            content = article.get(
+                "content",
+                ""
+            )
+
+
+            if content:
+
+
+                st.write(
+                    content[:1000]
                 )
-            )
+
+
+            else:
+
+                st.warning(
+                    "No content extracted."
+                )
+
 
 
             if article.get(
@@ -186,7 +269,7 @@ if "articles" in st.session_state:
 
 
 # -------------------------
-# PDF Report Viewer
+# PDF Download
 # -------------------------
 
 if "report_file" in st.session_state:
@@ -200,9 +283,11 @@ if "report_file" in st.session_state:
     )
 
 
+
     report_path = st.session_state[
         "report_file"
     ]
+
 
 
     if os.path.exists(
@@ -214,10 +299,6 @@ if "report_file" in st.session_state:
             "PDF Report generated successfully!"
         )
 
-
-        st.write(
-            f"File location: {report_path}"
-        )
 
 
         with open(
