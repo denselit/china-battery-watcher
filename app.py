@@ -6,7 +6,7 @@ from collector import BatteryCollector
 from keyword_filter import KeywordFilter
 from article_extractor import ArticleExtractor
 from report_generator import ReportGenerator
-from deduplicator import ArticleDeduplicator
+from technology_classifier import TechnologyClassifier
 
 
 
@@ -41,7 +41,7 @@ st.write(
     - Sodium-ion Battery
 
     Current stage:
-    Collection → Deduplication → Filtering → Content Extraction → PDF Report
+    Collection → Filtering → Extraction → Deduplication → Technology Classification → PDF Report
     """
 )
 
@@ -79,24 +79,6 @@ if st.button(
 
 
 
-        # -------------------------
-        # 1.5 Deduplicate Articles
-        # -------------------------
-
-        deduplicator = ArticleDeduplicator()
-
-
-        articles = deduplicator.remove_duplicates(
-            articles
-        )
-
-
-        st.info(
-            f"After duplicate removal: {len(articles)}"
-        )
-
-
-
         # 2. Filter
 
         keyword_filter = KeywordFilter(
@@ -121,6 +103,9 @@ if st.button(
         # 3. Extract Article Content
 
         extractor = ArticleExtractor()
+
+
+        classifier = TechnologyClassifier()
 
 
 
@@ -148,9 +133,25 @@ if st.button(
             )
 
 
+
+            # 4. Technology Classification
+
+            classification = classifier.classify(
+                result
+            )
+
+
+
+            result.update(
+                classification
+            )
+
+
+
             extracted_articles.append(
                 result
             )
+
 
 
             progress.progress(
@@ -160,7 +161,7 @@ if st.button(
 
 
         st.success(
-            "Article content extraction completed."
+            "Article extraction and technology classification completed."
         )
 
 
@@ -173,7 +174,7 @@ if st.button(
 
 
 
-        # 4. Generate PDF
+        # 5. Generate PDF
 
         generator = ReportGenerator(
             "reports"
@@ -189,6 +190,7 @@ if st.button(
         st.session_state[
             "report_file"
         ] = report_file
+
 
 
 
@@ -217,6 +219,7 @@ if "articles" in st.session_state:
                 "No title"
             )
         ):
+
 
 
             st.write(
@@ -248,8 +251,37 @@ if "articles" in st.session_state:
 
 
             st.write(
+                "Technology Category:"
+            )
+
+
+            st.write(
+                article.get(
+                    "technology_category",
+                    []
+                )
+            )
+
+
+
+            st.write(
+                "Investment Score:"
+            )
+
+
+            st.write(
+                article.get(
+                    "investment_score",
+                    0
+                )
+            )
+
+
+
+            st.write(
                 "Extracted Content Preview:"
             )
+
 
 
             content = article.get(
@@ -288,6 +320,7 @@ if "articles" in st.session_state:
 
 
 
+
 # -------------------------
 # PDF Download
 # -------------------------
@@ -315,6 +348,7 @@ if "report_file" in st.session_state:
     ):
 
 
+
         st.success(
             "PDF Report generated successfully!"
         )
@@ -325,6 +359,7 @@ if "report_file" in st.session_state:
             report_path,
             "rb"
         ) as pdf_file:
+
 
 
             st.download_button(
