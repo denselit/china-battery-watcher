@@ -6,3 +6,4 @@ feedparser
 streamlit
 reportlab
 beautifulsoup4
+googlenewsdecoder
