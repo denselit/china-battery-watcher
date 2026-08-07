@@ -1,7 +1,7 @@
 requests
 pyyaml
 python-dotenv
-openai
+google-generativeai
 feedparser
 streamlit
 reportlab
